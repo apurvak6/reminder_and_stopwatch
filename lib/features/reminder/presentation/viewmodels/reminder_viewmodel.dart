@@ -1,41 +1,38 @@
-import 'package:get/get.dart';
+import 'package:flutter/foundation.dart';
 import 'package:reminder_and_stopwatch/features/reminder/domain/repository/notification_repository.dart';
 import 'package:reminder_and_stopwatch/features/reminder/domain/usecases/add_reminder.dart';
 import 'package:reminder_and_stopwatch/features/reminder/domain/usecases/delete_reminder.dart';
 import 'package:reminder_and_stopwatch/features/reminder/domain/usecases/sort_reminders.dart';
 
-import '../../../../core/services/notification_service.dart';
 import '../../domain/entities/reminder.dart';
 import '../../domain/usecases/get_reminders.dart';
 
-class ReminderController extends GetxController {
+class ReminderViewModel extends ChangeNotifier {
   final AddReminderUsecase addReminder;
   final DeleteReminderUsecase deleteReminder;
   final GetRemindersUsecase getReminders;
   final SortReminders sortReminders;
   final NotificationRepository notificationRepository;
 
-  ReminderController({
+  ReminderViewModel({
     required this.addReminder,
     required this.deleteReminder,
     required this.getReminders,
     required this.sortReminders,
     required this.notificationRepository,
-  });
-
-  var reminders = <Reminder>[].obs;
-  var isLoading = false.obs;
-
-  @override
-  void onInit() {
-    super.onInit();
+  }) {
     loadReminders();
   }
 
+  List<Reminder> reminders = [];
+  bool isLoading = false;
+
   void loadReminders() {
-    isLoading.value = true;
-    reminders.value = sortReminders(getReminders());
-    isLoading.value = false;
+    isLoading = true;
+    notifyListeners();
+    reminders = sortReminders(getReminders());
+    isLoading = false;
+    notifyListeners();
   }
 
   Future<void> add(Reminder reminder) async {
@@ -44,7 +41,8 @@ class ReminderController extends GetxController {
     await notificationRepository.schedule(reminder);
 
     reminders.add(reminder);
-    reminders.value = sortReminders(reminders);
+    reminders = sortReminders(reminders);
+    notifyListeners();
   }
 
   Future<void> delete(String id) async {
@@ -52,6 +50,7 @@ class ReminderController extends GetxController {
     await notificationRepository.cancel(id);
 
     reminders.removeWhere((r) => r.id == id);
+    notifyListeners();
   }
 
   Future<void> toggleReminder(Reminder reminder, bool value) async {
@@ -73,7 +72,7 @@ class ReminderController extends GetxController {
     final index = reminders.indexWhere((r) => r.id == reminder.id);
     if (index != -1) {
       reminders[index] = updated;
-      reminders.refresh();
+      notifyListeners();
     }
   }
 

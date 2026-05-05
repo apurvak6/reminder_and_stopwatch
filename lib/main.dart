@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 import 'package:reminder_and_stopwatch/core/services/notification_service.dart';
 import 'package:reminder_and_stopwatch/features/reminder/data/datasource/reminder_local_datasource.dart';
 import 'package:reminder_and_stopwatch/features/reminder/data/repository/reminder_repository_impl.dart';
@@ -7,15 +8,13 @@ import 'package:reminder_and_stopwatch/features/reminder/domain/usecases/add_rem
 import 'package:reminder_and_stopwatch/features/reminder/domain/usecases/delete_reminder.dart';
 import 'package:reminder_and_stopwatch/features/reminder/domain/usecases/get_reminders.dart';
 import 'package:reminder_and_stopwatch/features/reminder/domain/usecases/sort_reminders.dart';
-import 'package:reminder_and_stopwatch/features/reminder/presentation/controllers/reminder_controller.dart';
+import 'package:reminder_and_stopwatch/features/reminder/presentation/viewmodels/reminder_viewmodel.dart';
 import 'package:reminder_and_stopwatch/features/reminder/presentation/screens/reminder_page.dart';
 import 'package:reminder_and_stopwatch/core/theme/theme_controller.dart';
 import 'package:reminder_and_stopwatch/features/stopwatch/data/repository_impl/stopwatch_repository_impl.dart';
-import 'package:reminder_and_stopwatch/features/stopwatch/domain/repositories/stopwatch_repository.dart';
-import 'package:reminder_and_stopwatch/features/stopwatch/presentation/controllers/stopwatch_controller.dart';
+import 'package:reminder_and_stopwatch/features/stopwatch/presentation/viewmodels/stopwatch_viewmodel.dart';
 import 'package:reminder_and_stopwatch/features/timer/data/repository_impl/timer_repository_impl.dart';
-import 'package:reminder_and_stopwatch/features/timer/domain/repositories/timer_repository.dart';
-import 'package:reminder_and_stopwatch/features/timer/presentation/controllers/timer_controller.dart';
+import 'package:reminder_and_stopwatch/features/timer/presentation/viewmodels/timer_viewmodel.dart';
 import 'package:reminder_and_stopwatch/features/timer/presentation/screens/timer_page.dart';
 
 import 'features/reminder/data/model/reminder_model.dart';
@@ -40,35 +39,38 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   MyApp({super.key});
 
-  final themeController = Get.find<ThemeController>();
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return Obx(
-      () => GetMaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Reminder & Stopwatch App',
-        themeMode: themeController.isDark.value
-            ? ThemeMode.dark
-            : ThemeMode.light,
-        theme: ThemeData(
-          brightness: Brightness.light,
-          scaffoldBackgroundColor: Colors.white,
-          colorScheme: .fromSeed(
-            seedColor: Colors.deepPurple,
-            brightness: Brightness.light,
-          ),
-        ),
-        darkTheme: ThemeData(
-          brightness: Brightness.dark,
-          scaffoldBackgroundColor: const Color(0xFF0E1A2B),
-          colorScheme: .fromSeed(
-            seedColor: Colors.deepPurple,
-            brightness: Brightness.dark,
-          ),
-        ),
-        home: const MyHomePage(title: 'StopWatch'),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeController()),
+        ...repositoryInitialization(),
+      ],
+      child: Consumer<ThemeController>(
+        builder: (context, themeController, child) {
+          return GetMaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Reminder & Stopwatch App',
+            themeMode: themeController.isDark ? ThemeMode.dark : ThemeMode.light,
+            theme: ThemeData(
+              brightness: Brightness.light,
+              scaffoldBackgroundColor: Colors.white,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.deepPurple,
+                brightness: Brightness.light,
+              ),
+            ),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              scaffoldBackgroundColor: const Color(0xFF0E1A2B),
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.deepPurple,
+                brightness: Brightness.dark,
+              ),
+            ),
+            home: const MyHomePage(title: 'StopWatch'),
+          );
+        },
       ),
     );
   }
@@ -87,7 +89,6 @@ class _MyHomePageState extends State<MyHomePage> {
   int index = 0;
 
   final pages = [StopwatchPage(), TimerPage(), ReminderPage()];
-  final themeController = Get.find<ThemeController>();
 
   String title = '';
   @override
@@ -99,18 +100,20 @@ class _MyHomePageState extends State<MyHomePage> {
           title: getTitle(),
           elevation: 10,
           actions: [
-            Obx(
-              () => IconButton(
-                icon: Tooltip(
-                  message: "Toggle Theme",
-                  child: Icon(
-                    themeController.isDark.value
-                        ? Icons.light_mode_outlined
-                        : Icons.dark_mode_outlined,
+            Consumer<ThemeController>(
+              builder: (context, themeController, child) {
+                return IconButton(
+                  icon: Tooltip(
+                    message: "Toggle Theme",
+                    child: Icon(
+                      themeController.isDark
+                          ? Icons.light_mode_outlined
+                          : Icons.dark_mode_outlined,
+                    ),
                   ),
-                ),
-                onPressed: themeController.toggleTheme,
-              ),
+                  onPressed: themeController.toggleTheme,
+                );
+              },
             ),
           ],
         ),
@@ -156,30 +159,30 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-void repositoryInitialization() {
+List<ChangeNotifierProvider> repositoryInitialization() {
   /// stopwatch dependency
-  final repo = StopwatchRepositoryImpl();
-  Get.put<StopwatchRepository>(repo);
-  Get.put(StopwatchController(repo));
+  final stopwatchRepo = StopwatchRepositoryImpl();
+  final stopwatchViewModel = StopwatchViewModel(stopwatchRepo);
 
   ///reminder dependency
   final ds = ReminderLocalDatasource();
   final reminderRepo = ReminderRepositoryImpl(ds);
   final notif = NotificationRepositoryImpl();
-
-  Get.lazyPut(() => ReminderController(
+  final reminderViewModel = ReminderViewModel(
     addReminder: AddReminderUsecase(reminderRepo),
-     deleteReminder: DeleteReminderUsecase(reminderRepo),
-     getReminders: GetRemindersUsecase(reminderRepo),
-     sortReminders: SortReminders(),
-     notificationRepository: notif,
-  ));
+    deleteReminder: DeleteReminderUsecase(reminderRepo),
+    getReminders: GetRemindersUsecase(reminderRepo),
+    sortReminders: SortReminders(),
+    notificationRepository: notif,
+  );
 
   ///timer dependency
   final timerRepo = TimerRepositoryImpl();
-  Get.put<TimerRepository>(timerRepo);
-  Get.put(TimerController(timerRepo));
+  final timerViewModel = TimerViewModel(timerRepo);
 
-  /// theme controller
-  Get.put(ThemeController());
+  return [
+    ChangeNotifierProvider<StopwatchViewModel>.value(value: stopwatchViewModel),
+    ChangeNotifierProvider<ReminderViewModel>.value(value: reminderViewModel),
+    ChangeNotifierProvider<TimerViewModel>.value(value: timerViewModel),
+  ];
 }

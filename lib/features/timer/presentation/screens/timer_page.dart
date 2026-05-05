@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import 'package:provider/provider.dart';
 import 'package:reminder_and_stopwatch/core/utils/format_time.dart';
-import 'package:reminder_and_stopwatch/features/timer/presentation/controllers/timer_controller.dart';
+import 'package:reminder_and_stopwatch/features/timer/presentation/viewmodels/timer_viewmodel.dart';
 
-import '../controllers/timer_buttons.dart';
+import '../viewmodels/timer_buttons.dart';
 
 class TimerPage extends StatelessWidget {
-  final controller = Get.find<TimerController>();
-
   final hController = TextEditingController();
   final mController = TextEditingController();
   final sController = TextEditingController();
@@ -26,51 +22,49 @@ class TimerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(height: 40),
-
-        /// Input
-        Row(
+    return Consumer<TimerViewModel>(
+      builder: (context, viewModel, child) {
+        return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _inputBox(hController, "HH"),
-            const SizedBox(width: 10),
-            _inputBox(mController, "MM"),
-            const SizedBox(width: 10),
-            _inputBox(sController, "SS"),
-          ],
-        ),
+            SizedBox(height: 40),
 
-        SizedBox(height: 30),
-
-        /// Timer display
-        Obx(
-          () => Text(
-            FormatTime.format(controller.remainingTime.value),
-            style: TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 48,
-              letterSpacing: 2,
+            /// Input
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _inputBox(hController, "HH"),
+                const SizedBox(width: 10),
+                _inputBox(mController, "MM"),
+                const SizedBox(width: 10),
+                _inputBox(sController, "SS"),
+              ],
             ),
-          ),
-        ),
-        SizedBox(height: 10),
 
-        /// END TIME
-        Obx(() {
-          if (controller.endTime == null) return const SizedBox();
+            SizedBox(height: 30),
 
-          final end = controller.endTime!;
-          return Text(
-            "Ends at: ${end.hour.toString().padLeft(2, '0')}:"
-            "${end.minute.toString().padLeft(2, '0')}",
-          );
-        }),
-        SizedBox(height: 30),
-        ControlledButtons(controller: controller, getInput: getInputDuration),
-      ],
+            /// Timer display
+            Text(
+              FormatTime.format(viewModel.remainingTime),
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 48,
+                letterSpacing: 2,
+              ),
+            ),
+            SizedBox(height: 10),
+
+            /// END TIME
+            if (viewModel.endTime != null)
+              Text(
+                "Ends at: ${viewModel.endTime!.hour.toString().padLeft(2, '0')}:"
+                "${viewModel.endTime!.minute.toString().padLeft(2, '0')}",
+              ),
+            SizedBox(height: 30),
+            ControlledButtons(viewModel: viewModel, getInput: getInputDuration),
+          ],
+        );
+      },
     );
   }
 

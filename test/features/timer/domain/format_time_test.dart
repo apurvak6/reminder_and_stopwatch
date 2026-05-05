@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reminder_and_stopwatch/core/utils/format_time.dart';
-import 'package:reminder_and_stopwatch/features/stopwatch/domain/usecases/add_lap.dart';
 
 void main() {
   test('Should format duration correctly' , () {

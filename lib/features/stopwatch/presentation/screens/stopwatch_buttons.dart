@@ -1,81 +1,83 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import 'package:provider/provider.dart';
 
-import '../controllers/stopwatch_controller.dart';
+import '../viewmodels/stopwatch_viewmodel.dart';
 
 class ControlledButton extends StatelessWidget {
-  final StopwatchController controller;
+  final StopwatchViewModel viewModel;
 
-  const ControlledButton({super.key, required this.controller});
+  const ControlledButton({super.key, required this.viewModel});
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final status = controller.status.value;
+    return Consumer<StopwatchViewModel>(
+      builder: (context, vm, child) {
+        final status = vm.status;
 
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          /// LEFT BUTTON
-          if (status == StopwatchStatus.initial)
-            ElevatedButton(
-              onPressed: controller.start,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                shape: StadiumBorder(),
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            /// LEFT BUTTON
+            if (status == StopwatchStatus.initial)
+              ElevatedButton(
+                onPressed: vm.start,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  shape: StadiumBorder(),
+                ),
+                child: Text("Start"),
+              )
+            else if (status == StopwatchStatus.running)
+              ElevatedButton(
+                onPressed: vm.addLap,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  shape: StadiumBorder(),
+                ),
+                child: const Text("Lap"),
+              )
+            else if (status == StopwatchStatus.paused)
+              ElevatedButton(
+                onPressed: vm.reset,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  shape: StadiumBorder(),
+                ),
+                child: const Text("Reset"),
               ),
-              child: Text("Start"),
-            )
-          else if (status == StopwatchStatus.running)
-            ElevatedButton(
-              onPressed: controller.addLap,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                shape: StadiumBorder(),
-              ),
-              child: const Text("Lap"),
-            )
-          else if (status == StopwatchStatus.paused)
-            ElevatedButton(
-              onPressed: controller.reset,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                shape: StadiumBorder(),
-              ),
-              child: const Text("Reset"),
-            ),
-          SizedBox(width: 12),
+            SizedBox(width: 12),
 
-          if (status == StopwatchStatus.running)
-            ElevatedButton(
-              onPressed: controller.stop,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                shape: StadiumBorder(),
+            if (status == StopwatchStatus.running)
+              ElevatedButton(
+                onPressed: vm.stop,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  shape: StadiumBorder(),
+                ),
+                child: Text("Stop"),
+              )
+            else if (status == StopwatchStatus.paused)
+              ElevatedButton(
+                onPressed: vm.start,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  shape: StadiumBorder(),
+                ),
+                child: const Text("Resume"),
               ),
-              child: Text("Stop"),
-            )
-          else if (status == StopwatchStatus.paused)
-            ElevatedButton(
-              onPressed: controller.start,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                shape: StadiumBorder(),
-              ),
-              child: const Text("Resume"),
-            ),
-        ],
-      );
-    });
+          ],
+        );
+      },
+    );
   }
 }
