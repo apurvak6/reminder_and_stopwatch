@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:reminder_and_stopwatch/features/stopwatch/domain/entities/lap_entity.dart';
+import 'package:reminder_and_stopwatch/features/stopwatch/domain/repositories/stopwatch_repository.dart';
 import 'package:reminder_and_stopwatch/features/stopwatch/domain/usecases/add_lap.dart';
 import 'package:reminder_and_stopwatch/features/stopwatch/domain/usecases/get_elapsed_time.dart';
 import 'package:reminder_and_stopwatch/features/stopwatch/domain/usecases/lap_analytics.dart';
@@ -10,66 +11,49 @@ import 'package:reminder_and_stopwatch/features/stopwatch/domain/usecases/lap_an
 enum StopwatchStatus { initial, running, paused }
 
 class StopwatchController extends GetxController {
-  final Stopwatch _stopwatch;
+  final StopwatchRepository repository;
 
-  StopwatchController({Stopwatch? stopwatch})
-    : _stopwatch = stopwatch ?? Stopwatch();
+  StopwatchController(this.repository);
 
-  final GetElapsedTime getElapsedTime = GetElapsedTime();
-  final AddLap _addLap = AddLap();
-  final LapAnalytics _analytics = LapAnalytics();
-
+  final time = "00:00:00".obs;
   final status = StopwatchStatus.initial.obs;
+  final laps = <Lap>[].obs;
 
-  late Timer _timer;
-
-  var time = "00:00:00".obs;
-  // var isRunning = false.obs;
-
-  var laps = <Lap>[].obs;
-
-  Lap? get fastestLap => _analytics.fastest(laps);
-  Lap? get slowestLap => _analytics.slowest(laps);
-
-  bool get hasStarted => _stopwatch.elapsedMilliseconds > 0;
-
-  bool get isRunning => status.value == StopwatchStatus.running;
-  bool get isPaused => status.value == StopwatchStatus.paused;
-  bool get isInitial => status.value == StopwatchStatus.initial;
+  final GetElapsedTimeUseCase _format = GetElapsedTimeUseCase();
+  final AddLapUseCase _addLapUseCase = AddLapUseCase();
+  final LapAnalyticsUseCase _analyticsUseCase = LapAnalyticsUseCase();
 
   @override
   void onInit() {
     super.onInit();
 
-    _timer = Timer.periodic(Duration(milliseconds: 30), (timer) {
-      time.value = getElapsedTime(_stopwatch.elapsedMilliseconds);
+    repository.timeStream.listen((duration) {
+      time.value = _format(duration.inMilliseconds);
     });
   }
 
   void start() {
-    _stopwatch.start();
+    repository.start();
     status.value = StopwatchStatus.running;
   }
 
   void stop() {
-    _stopwatch.stop();
+    repository.pause();
     status.value = StopwatchStatus.paused;
   }
 
   void reset() {
-    _stopwatch.reset();
-    laps.clear();
-    time.value = "00:00:00";
+    repository.reset();
+    laps.value = [];
     status.value = StopwatchStatus.initial;
   }
 
   void addLap() {
-    laps.value = _addLap(laps, _stopwatch.elapsedMilliseconds);
+    laps.value = _addLapUseCase(laps, repository.currentElapsedMs);
   }
 
-  @override
-  void onClose() {
-    super.onClose();
-    _timer.cancel();
-  }
+  String format(int ms) => _format(ms);
+
+  Lap? get fastestLap => _analyticsUseCase.fastest(laps);
+  Lap? get slowestLap => _analyticsUseCase.slowest(laps);
 }

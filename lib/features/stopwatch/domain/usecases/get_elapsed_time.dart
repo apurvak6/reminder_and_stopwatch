@@ -1,4 +1,4 @@
-class GetElapsedTime {
+class GetElapsedTimeUseCase {
   String call(int ms) {
     var secs = ms ~/ 1000;
     var hours = (secs ~/ 3600).toString().padLeft(2, '0');

@@ -1,5 +1,7 @@
 import 'package:hive/hive.dart';
 
+import '../../domain/entities/reminder.dart';
+
 part 'reminder_model.g.dart';
 
 @HiveType(typeId: 0)
@@ -19,6 +21,14 @@ class ReminderModel {
     required this.title,
     this.isActive = true,
   });
+
+  factory ReminderModel.fromEntity(Reminder e) => ReminderModel(
+    id: e.id,
+    time: e.time,
+    title: e.title,
+    isActive: e.isActive,
+  );
+
+  Reminder toEntity() =>
+      Reminder(id: id, time: time, title: title, isActive: isActive);
 }
-
-

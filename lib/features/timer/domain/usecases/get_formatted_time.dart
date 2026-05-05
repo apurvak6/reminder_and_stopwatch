@@ -1,7 +1,7 @@
-class GetFormattedTime {
+class GetFormattedTimeUsecase {
   String call(Duration d) {
     final h = d.inHours;
-    final minutes =d.inMinutes ~/ 60;
+    final minutes = d.inMinutes ~/ 60;
     final seconds = d.inSeconds % 60;
 
     return "${h.toString().padLeft(2, '0')}:"

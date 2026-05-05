@@ -1,6 +1,6 @@
 import '../entities/lap_entity.dart';
 
-class LapAnalytics {
+class LapAnalyticsUseCase {
   Lap? fastest(List<Lap> laps) {
     if (laps.isEmpty) {
       return null;
